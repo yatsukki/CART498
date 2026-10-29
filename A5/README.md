@@ -2,6 +2,8 @@
 
 A responsive single-page field archive of 16 generated imagined animals and their fictional language.
 
+[Open the project in your browser](./index.html)
+
 ## Run / host
 
 Open `index.html` in a browser, or deploy this folder unchanged with GitHub Pages, Netlify, or Vercel. There is no build step.
