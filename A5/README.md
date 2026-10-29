@@ -12,8 +12,6 @@ Open `index.html` in a browser, or deploy this folder unchanged with GitHub Page
 
 > Invent a short, speakable phrase for a fictional animal. Use 2–5 syllables, soft consonant clusters, and no recognizable real language. Give an English field-note gloss describing a social, emotional, or environmental meaning.
 
-The resulting 16 phrases are in `script.js`, paired with each generated image.
+The resulting 15 phrases are in `script.js`, paired with each generated image.
 
-## Adding the audio later
 
-Create an `audio` folder and add `animal-00.mp3` through `animal-15.mp3`. The page currently presents each intended duration as a clearly labelled “Audio to be added” call specimen, per the current project scope.
