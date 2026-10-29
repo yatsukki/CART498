@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="#">prompt<span>gallery</span></a>
+    <p class="edition">AN OPEN EDITION · 2026</p>
+    <button class="menu-button" aria-label="Open menu"><span></span><span></span></button>
+  </header>
+
+  <main>
+    <section class="intro">
+      <p class="eyebrow">IMAGE GENERATION, REFRAMED</p>
+      <h1>Make a prompt.<br /><em>Meet an artwork.</em></h1>
+      <p class="intro-copy">Every idea deserves its own place on the wall. Describe what you’re looking for and we’ll present it as a newly catalogued work.</p>
+    </section>
+
+    <section class="composer" aria-label="Create an artwork">
+      <label for="prompt">What do you want to see?</label>
+      <div class="prompt-field">
+        <textarea id="prompt" rows="3" maxlength="1000" placeholder="A sunlit swimming pool on the moon, photographed on 35mm film...">A quiet corner of a future city, soft afternoon light, painted in warm colour fields</textarea>
+        <div class="field-footer"><span id="character-count">86 / 1000</span><button id="generate-button" type="button">Create artwork <span aria-hidden="true">↗</span></button></div>
+      </div>
+      <p class="fine-print">Your prompt is the starting point. Each work is generated uniquely for you.</p>
+    </section>
+
+    <section class="gallery" aria-live="polite">
+      <div class="gallery-heading"><p class="eyebrow">NEW ACQUISITION</p><span id="status">READY WHEN YOU ARE</span></div>
+      <div class="artwork-layout">
+        <div class="frame-wrap">
+          <div class="frame">
+            <div class="artwork-placeholder" id="artwork-placeholder"><span>YOUR WORK<br />WILL APPEAR<br />HERE</span></div>
+            <img id="generated-image" alt="Generated artwork" hidden />
+            <div class="loading-layer" id="loading-layer" hidden><div class="spinner"></div><p>Preparing the gallery wall</p></div>
+          </div>
+        </div>
+        <article class="wall-label">
+          <p class="label-type">WALL LABEL</p>
+          <h2 id="art-title"><em>Untitled (Awaiting Prompt)</em></h2>
+          <p class="artist" id="artist-name">Prompt Gallery Studio</p>
+          <p class="meta-line" id="year">2026</p>
+          <hr />
+          <dl>
+            <div><dt>Medium</dt><dd id="medium">Digital image, generated from text</dd></div>
+            <div><dt>Dimensions</dt><dd id="dimensions">1024 × 1024 px</dd></div>
+            <div><dt>Provenance</dt><dd id="provenance">Generated for this collection</dd></div>
+            <div><dt>Credit line</dt><dd id="credit-line">Courtesy of the artist and Prompt Gallery</dd></div>
+          </dl>
+          <section class="extended-label" aria-labelledby="extended-label-heading">
+            <h3 id="extended-label-heading">Extended label</h3>
+            <p>This work stages a meeting between memory and speculation, using the prompt not as instruction but as a field of possibility. Its visual language treats atmosphere, scale, and texture as curatorial decisions, inviting viewers to notice how description becomes image. The resulting scene remains deliberately unsettled: intimate yet remote, familiar yet newly fabricated. As invented media theorist Elian Voss argues in <cite>The Tender Algorithm</cite> (2018), “images generated from language retain the pressure of every word withheld.” Here, that pressure turns a private idea into an object for slow looking.</p>
+          </section>
+          <button class="text-button" id="download-button" hidden>Download image <span>↓</span></button>
+        </article>
+      </div>
+    </section>
+  </main>
+  <footer><span>PROMPT GALLERY</span><span>MADE FOR CURIOUS MINDS</span><span>© 2026</span></footer>
+  <script src="javascript.js"></script>
+</body>
+</html>

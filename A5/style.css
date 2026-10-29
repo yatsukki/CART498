@@ -1,0 +1,9 @@
+* { box-sizing: border-box; }
+html, body, #jungle { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+#jungle { position: relative; background: url("images/jungle.jpg") center / cover no-repeat; }
+.animal { position: absolute; display: block; width: clamp(76px, 11vw, 170px); height: clamp(76px, 11vw, 170px); object-fit: cover; border-radius: 50%; cursor: pointer; user-select: none; box-shadow: 0 5px 20px rgba(0, 0, 0, .28); }
+.animal:hover { outline: 3px solid white; outline-offset: 3px; }
+.specimen-card { position: fixed; top: 20px; left: 20px; z-index: 2; min-width: 235px; padding: 12px 15px; color: #000; background: #fff; border: 3px solid #000; font-family: "Courier New", Courier, monospace; }
+.specimen-card span { display: block; margin-bottom: 5px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.specimen-card strong { font-size: 16px; }
+.message { position: fixed; left: 22px; bottom: 20px; z-index: 2; width: min(370px, calc(100vw - 44px)); margin: 0; color: white; font: 13px/1.45 "Courier New", Courier, monospace; text-shadow: 0 1px 4px rgba(0, 0, 0, .9); }
