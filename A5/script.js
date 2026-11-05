@@ -1,6 +1,8 @@
 const jungle = document.querySelector('#jungle');
 const bgm = document.querySelector('#bgm');
 const speciesName = document.querySelector('#species-name');
+const animalCall = document.querySelector('#animal-call');
+const callMeaning = document.querySelector('#call-meaning');
 const specimenCard = document.querySelector('#specimen-card');
 const soundFiles = Array.from({ length: 15 }, (_, index) => `sounds/s${index + 1}.wav`);
 const latinNames = [
@@ -8,6 +10,24 @@ const latinNames = [
   'Felis rubriflora', 'Ursus noctiluca', 'Mustela caelestis', 'Pardus umbratus',
   'Cervus ferox', 'Aquila muscaria', 'Lutra grandis', 'Rupicapra fulgens',
   'Sciurus astralis', 'Procyon florens', 'Tigris paludosa', 'Bubo argentum'
+];
+const translations = [
+  ['Ka kak khou!!', 'Hello! You look snack-shaped.'],
+  ['Vee-rah, vee-rah', 'This leaf is mine, respectfully.'],
+  ['Chrrr-oo?', 'Did you see that shadow move?'],
+  ['Wuffa-lum!', 'I have brought you a very important stick.'],
+  ['Mrrip mrrip', 'No photographs before my second nap.'],
+  ['Boo-rum-bah', 'The moon is doing excellent work tonight.'],
+  ['Tika-tika-choo', 'Race you to that suspicious mushroom.'],
+  ['Hush-kraaa', 'I know a shortcut. It is probably safe.'],
+  ['Dohm! Dohm!', 'Everybody remain calm. I found berries.'],
+  ['Kreee-ya!', 'Witness my extremely normal landing.'],
+  ['Blubba-nee', 'The river says you need a break.'],
+  ['Pip-pah-pow', 'Up here the wind has all the gossip.'],
+  ['Zizizip!', 'I hid a nut somewhere clever.'],
+  ['Rakka-rakka', 'This shiny thing is now community property.'],
+  ['Hraaa-voh', 'I was born dramatic; blame the swamp.'],
+  ['Hoo-veloo', 'Good evening. Please admire my feathers.']
 ];
 bgm.volume = 0.12;
 function shuffled(items) { return [...items].sort(() => Math.random() - 0.5); }
@@ -19,6 +39,8 @@ function playAnimalCall(animal) {
   activeCall.volume = 0.72;
   activeCall.play();
   speciesName.textContent = animal.name;
+  animalCall.textContent = `“${animal.call}”`;
+  callMeaning.textContent = animal.meaning;
   specimenCard.hidden = false;
   bgm.play().catch(() => {});
 }
@@ -33,7 +55,8 @@ const animals = Array.from({ length: 16 }, (_, index) => {
   image.setAttribute('aria-label', `Hear ${latinNames[index]}`);
   jungle.append(image);
   const size = Math.min(Math.max(window.innerWidth * 0.11, 76), 170);
-  const animal = { image, name: latinNames[index], sound: assignedSounds[index], size, x: Math.random() * Math.max(1, window.innerWidth - size), y: Math.random() * Math.max(1, window.innerHeight - size), dx: (Math.random() * 1.15 + .35) * (Math.random() < .5 ? -1 : 1), dy: (Math.random() * 1.15 + .35) * (Math.random() < .5 ? -1 : 1) };
+  const [call, meaning] = translations[index];
+  const animal = { image, name: latinNames[index], call, meaning, sound: assignedSounds[index], size, x: Math.random() * Math.max(1, window.innerWidth - size), y: Math.random() * Math.max(1, window.innerHeight - size), dx: (Math.random() * 1.15 + .35) * (Math.random() < .5 ? -1 : 1), dy: (Math.random() * 1.15 + .35) * (Math.random() < .5 ? -1 : 1) };
   image.addEventListener('click', () => playAnimalCall(animal));
   image.addEventListener('keydown', event => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); playAnimalCall(animal); }
