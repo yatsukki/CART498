@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OLLAMA — Will It Run?</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* ===================== TOKENS ===================== */
+:root{
+  --ink:#1b1830;
+  --bg:#f6f4ff;
+  --card:#ffffff;
+  --violet:#6c5ce7;
+  --violet-soft:#efecff;
+  --pink:#f471b5;
+  --pink-soft:#ffe9f4;
+  --orange:#ff8a3d;
+  --orange-soft:#ffedde;
+  --blue:#3aa8ff;
+  --blue-soft:#e3f2ff;
+  --green:#16a34a;
+  --green-soft:#dcfce7;
+  --amber:#d97706;
+  --amber-soft:#fef3c7;
+  --red:#dc2626;
+  --red-soft:#fee2e2;
+  --grey:#8a86a3;
+  --line:#e9e6f7;
+  --display:'Space Grotesk',sans-serif;
+  --mono:'Space Mono',monospace;
+  --radius:24px;
+  --shadow:0 10px 40px rgba(80,70,180,.10);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:var(--display);
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+::selection{background:var(--violet);color:#fff}
+button{font-family:var(--display);cursor:pointer;border:none;background:none}
+input,textarea,select{font-family:var(--display)}
+
+/* soft colour blobs behind everything */
+.blob{position:fixed;border-radius:50%;filter:blur(90px);opacity:.5;pointer-events:none;z-index:0}
+.blob.v{width:420px;height:420px;background:#d8ccff;top:-120px;left:-100px}
+.blob.p{width:380px;height:380px;background:#ffd3ea;top:30%;right:-140px}
+.blob.o{width:340px;height:340px;background:#ffe3c8;bottom:-120px;left:20%}
+
+/* ===================== NAV ===================== */
+nav{
+  position:relative;z-index:5;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:22px clamp(20px,5vw,56px);
+}
+.brand{font-weight:700;font-size:18px;letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+.brand i{width:14px;height:14px;border-radius:50%;background:var(--violet);display:inline-block}
+.nav-links{display:flex;gap:14px;align-items:center}
+.nav-links a,.pillbtn{
+  font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+  padding:10px 18px;border-radius:100px;text-decoration:none;
+}
+.nav-links a{color:var(--ink);background:#fff;box-shadow:var(--shadow)}
+.pillbtn{background:var(--ink);color:#fff}
+
+/* ===================== LAYOUT ===================== */
+.wrap{position:relative;z-index:2;max-width:840px;margin:0 auto;padding:20px clamp(18px,4vw,32px) 80px}
+
+.hero{text-align:center;margin:48px 0 56px}
+.badge{
+  display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  background:#fff;padding:9px 18px;border-radius:100px;box-shadow:var(--shadow);
+  margin-bottom:22px;
+}
+.badge b{color:var(--violet)}
+.hero h1{font-size:clamp(42px,7vw,76px);font-weight:700;line-height:1.02;letter-spacing:-.02em}
+.hero h1 em{font-style:normal;color:var(--violet)}
+.hero p{margin:20px auto 0;max-width:520px;font-size:16px;line-height:1.7;color:#5c577a}
+
+/* ===================== CARDS ===================== */
+.card{
+  background:var(--card);border-radius:var(--radius);padding:clamp(26px,4vw,44px);
+  box-shadow:var(--shadow);margin-bottom:28px;
+}
+.step{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;font-weight:700;
+  padding:7px 14px;border-radius:100px;margin-bottom:16px;
+}
+.step.one{background:var(--violet-soft);color:var(--violet)}
+.step.two{background:var(--pink-soft);color:var(--pink)}
+.card h2{font-size:clamp(26px,3.5vw,36px);font-weight:700;letter-spacing:-.01em;margin-bottom:8px}
+.card .sub{font-size:15px;color:#5c577a;line-height:1.6;margin-bottom:28px}
+
+/* ===================== PRESETS ===================== */
+.presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.preset{
+  text-align:left;border:2px solid var(--line);border-radius:18px;
+  padding:16px 18px;background:#fff;transition:.18s;
+}
+.preset:hover{border-color:var(--violet);transform:translateY(-2px)}
+.preset.active{border-color:var(--violet);background:var(--violet-soft)}
+.preset .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-bottom:10px}
+.preset .name{display:block;font-weight:600;font-size:15px}
+.preset .spec{display:block;font-family:var(--mono);font-size:11px;color:var(--grey);margin-top:6px;line-height:1.7}
+.preset.custom{border-style:dashed;text-align:center}
+.preset.custom .name{font-size:20px}
+
+/* ===================== CUSTOM BUILD ===================== */
+.custom-panel{
+  display:none;margin-top:18px;background:#faf9ff;border-radius:18px;
+  padding:24px;grid-template-columns:1fr 1fr;gap:20px;
+}
+.custom-panel.open{display:grid}
+@media(max-width:560px){.custom-panel.open{grid-template-columns:1fr}}
+.stepper label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--grey);margin-bottom:10px}
+.stepper .row{display:flex;align-items:center;gap:14px}
+.stepper button{
+  width:44px;height:44px;border-radius:14px;background:#fff;box-shadow:var(--shadow);
+  font-size:20px;font-weight:700;transition:.15s;
+}
+.stepper button:hover{background:var(--violet);color:#fff}
+.stepper .val{font-size:32px;font-weight:700;min-width:110px;text-align:center}
+.stepper .val small{font-size:14px;color:var(--grey);font-weight:500}
+
+/* ===================== STAT TILES ===================== */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}
+@media(max-width:560px){.stats{grid-template-columns:1fr}}
+.tile{border-radius:20px;padding:26px;position:relative;overflow:hidden}
+.tile .label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;opacity:.8}
+.tile .num{font-size:clamp(44px,6vw,60px);font-weight:700;line-height:1.1;margin-top:8px}
+.tile .num small{font-size:20px;font-weight:600;opacity:.75}
+.tile .hint{font-size:13px;margin-top:8px;opacity:.85}
+.tile.vram{background:linear-gradient(135deg,#6c5ce7,#8f7bff);color:#fff;box-shadow:0 10px 30px rgba(108,92,231,.35)}
+.tile.ram{background:linear-gradient(135deg,#f471b5,#ff9ac8);color:#fff;box-shadow:0 10px 30px rgba(244,113,181,.3)}
+.tile .bigword{
+  position:absolute;right:-8px;bottom:-22px;font-size:84px;font-weight:700;
+  opacity:.12;letter-spacing:-.03em;pointer-events:none;
+}
+
+.fit-line{
+  margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  font-size:14.5px;color:#5c577a;
+}
+.fit-pill{
+  font-family:var(--mono);font-size:12px;font-weight:700;
+  padding:9px 16px;border-radius:100px;
+}
+.fit-pill.good{background:var(--green-soft);color:var(--green)}
+.fit-pill.ok{background:var(--amber-soft);color:var(--amber)}
+.fit-pill.bad{background:var(--red-soft);color:var(--red)}
+.mac-note{display:none;margin-top:14px;font-size:13px;color:#7a6ee6;background:var(--violet-soft);padding:12px 16px;border-radius:14px}
+.mac-note.show{display:block}
+
+/* arrow between steps */
+.arrow-down{
+  text-align:center;font-size:26px;color:var(--violet);margin:6px 0 20px;
+  animation:bob 1.6s ease-in-out infinite;
+}
+@keyframes bob{50%{transform:translateY(6px)}}
+
+/* ===================== CHAT ===================== */
+.chat-log{
+  background:#faf9ff;border-radius:18px;padding:22px;
+  height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;
+}
+.chat-log::-webkit-scrollbar{width:6px}
+.chat-log::-webkit-scrollbar-thumb{background:#d9d4f5;border-radius:10px}
+
+.msg{max-width:86%;animation:pop .25s ease}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}}
+.msg.user{align-self:flex-end}
+.msg.user .bubble{background:var(--violet);color:#fff;border-radius:18px 18px 6px 18px}
+.msg.bot .bubble{background:#fff;border:1px solid var(--line);border-radius:18px 18px 18px 6px;box-shadow:0 4px 16px rgba(80,70,180,.07)}
+.bubble{padding:14px 18px;font-size:14.5px;line-height:1.7}
+
+.sysnote{
+  align-self:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+  color:var(--grey);background:#fff;border:1px dashed #d9d4f5;
+  padding:7px 14px;border-radius:100px;
+}
+
+.bubble .model-name{font-size:21px;font-weight:700;display:block;margin-bottom:8px}
+.bubble .model-name span{color:var(--violet)}
+.bubble ul{list-style:none;margin:6px 0 4px}
+.bubble li{padding-left:20px;position:relative;margin-bottom:6px;color:#3d3a55}
+.bubble li::before{content:"●";position:absolute;left:0;font-size:8px;color:var(--pink);top:6px}
+
+.cmdline{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--ink);color:#cfc9ff;padding:12px 14px;border-radius:14px;margin-top:12px;
+  font-family:var(--mono);font-size:12.5px;word-break:break-all;
+}
+.cmdline button{
+  background:var(--violet);color:#fff;font-size:10px;letter-spacing:.1em;font-weight:700;
+  padding:8px 14px;border-radius:100px;flex-shrink:0;
+}
+.cmdline button:hover{background:#8574ff}
+
+.fitbadge{
+  display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;
+  padding:7px 14px;border-radius:100px;margin-top:12px;
+}
+.fitbadge.great{background:var(--green-soft);color:var(--green)}
+.fitbadge.ok{background:var(--amber-soft);color:var(--amber)}
+.fitbadge.no{background:var(--red-soft);color:var(--red)}
+.alt-chip{
+  display:inline-block;font-family:var(--mono);font-size:11px;
+  border:1px solid var(--line);background:var(--blue-soft);color:#2173b8;
+  border-radius:100px;padding:7px 13px;margin:10px 0 0;
+}
+
+.typing{align-self:flex-start;display:inline-flex;gap:6px;background:#fff;border:1px solid var(--line);
+  border-radius:18px;padding:16px 18px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--violet);animation:dt 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}
+.typing i:nth-child(3){animation-delay:.3s}
+@keyframes dt{0%,60%,100%{transform:none;opacity:.3}30%{transform:translateY(-5px);opacity:1}}
+
+.quick{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.qchip{
+  font-size:13px;font-weight:600;padding:10px 18px;border-radius:100px;transition:.15s;
+}
+.qchip:hover{transform:translateY(-2px)}
+.qchip.c1{background:var(--violet-soft);color:var(--violet)}
+.qchip.c2{background:var(--pink-soft);color:var(--pink)}
+.qchip.c3{background:var(--orange-soft);color:var(--orange)}
+.qchip.c4{background:var(--blue-soft);color:#2173b8}
+
+.chat-input{display:flex;gap:12px}
+.chat-input textarea{
+  flex:1;border:2px solid var(--line);border-radius:18px;outline:none;resize:none;
+  padding:16px 18px;font-size:15px;line-height:1.5;max-height:110px;background:#fff;
+}
+.chat-input textarea:focus{border-color:var(--violet)}
+.chat-input button{
+  background:var(--violet);color:#fff;font-weight:700;font-size:15px;
+  padding:0 28px;border-radius:18px;transition:.15s;
+  box-shadow:0 8px 20px rgba(108,92,231,.35);
+}
+.chat-input button:hover{background:#5a4ad4}
+
+footer{
+  position:relative;z-index:2;text-align:center;padding:30px 20px 44px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--grey);
+}
+.credit{margin-top:10px;opacity:.65}
+
+/* ===================== REAL MODEL LOADER ===================== */
+.loadbox{border:2px dashed #d9d4f5;border-radius:18px;padding:18px 20px;margin-bottom:18px;background:#fff}
+.loadbox.done{border-style:solid;border-color:var(--green-soft);background:#f4fdf6}
+.loadbox-top{display:flex;justify-content:space-between;gap:18px;align-items:center;flex-wrap:wrap}
+.loadbox p{font-size:12.5px;color:#5c577a;line-height:1.55;margin-top:6px;max-width:480px}
+.loadbox code{font-family:var(--mono);font-size:11px;background:var(--violet-soft);padding:1px 6px;border-radius:6px}
+#loadBtn{background:var(--violet);color:#fff;font-weight:700;padding:13px 22px;border-radius:100px;
+  white-space:nowrap;box-shadow:0 8px 20px rgba(108,92,231,.35);transition:.15s}
+#loadBtn:hover{background:#5a4ad4}
+#loadBtn:disabled{opacity:.6;cursor:default;box-shadow:none}
+.barwrap{margin-top:14px}
+.bar{height:10px;background:var(--violet-soft);border-radius:100px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--pink));transition:width .3s}
+.barlabel{font-family:var(--mono);font-size:10.5px;color:var(--grey);margin-top:8px;letter-spacing:.04em}
+.loadbox.done .barlabel{color:var(--green)}
+
+.livelabel{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);
+  font-size:9.5px;letter-spacing:.14em;color:var(--green);margin-bottom:8px}
+.livelabel i{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.2}}
+.verify{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--grey);margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<div class="blob v"></div><div class="blob p"></div><div class="blob o"></div>
+
+<nav>
+  <div class="brand"><i></i>OLLAMA / tools</div>
+  <div class="nav-links">
+    <button class="pillbtn" id="fsBtn">⛶ Present</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="badge">CART 498 · <b>Companion Tool</b></div>
+    <h1>Will it run?<br><em>Find your model.</em></h1>
+    <p>Pick a computer below — or build your own — then describe your project.
+       The recommender matches you with an open-source model that actually fits your hardware.</p>
+  </div>
+
+  <!-- ================= STEP 1: YOUR COMPUTER ================= -->
+  <section class="card">
+    <div class="step one">● STEP 1</div>
+    <h2>Pick your computer</h2>
+    <p class="sub">Choose a preset, or hit <b>+ Build your own</b> to enter custom specs.</p>
+
+    <div class="presets" id="presets"></div>
+
+    <div class="custom-panel" id="customPanel">
+      <div class="stepper">
+        <label>GPU VRAM (GB)</label>
+        <div class="row">
+          <button id="vMinus">−</button>
+          <div class="val"><span id="vCustom">8</span> <small>GB</small></div>
+          <button id="vPlus">+</button>
+        </div>
+      </div>
+      <div class="stepper">
+        <label>SYSTEM RAM (GB)</label>
+        <div class="row">
+          <button id="rMinus">−</button>
+          <div class="val"><span id="rCustom">16</span> <small>GB</small></div>
+          <button id="rPlus">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="tile vram">
+        <div class="label">GPU VRAM</div>
+        <div class="num"><span id="statVram">12</span> <small>GB</small></div>
+        <div class="hint" id="vramHint">Dedicated graphics card memory</div>
+        <div class="bigword">GPU</div>
+      </div>
+      <div class="tile ram">
+        <div class="label">SYSTEM RAM</div>
+        <div class="num"><span id="statRam">32</span> <small>GB</small></div>
+        <div class="hint">Shared by everything you're running</div>
+        <div class="bigword">RAM</div>
+      </div>
+    </div>
+
+    <div class="mac-note" id="macNote">🍎 Apple Silicon shares memory between CPU and GPU automatically — the VRAM figure is an estimate of the GPU-usable portion.</div>
+
+    <div class="fit-line">
+      <span>Estimated comfort zone:</span>
+      <span class="fit-pill good" id="fitPill">models up to ~16B params</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--grey)">Q4 rule: ≈0.6 GB per billion params + 2 GB overhead</span>
+    </div>
+  </section>
+
+  <div class="arrow-down">↓</div>
+
+  <!-- ================= STEP 2: CHATBOT ================= -->
+  <section class="card">
+    <div class="step two">● STEP 2</div>
+    <h2>Describe your project</h2>
+    <p class="sub">TinyLlama knows your specs from Step 1 — it only suggests models that fit.</p>
+
+    <!-- REAL TinyLlama loader: downloads once, then runs on this machine's GPU via WebGPU -->
+    <div class="loadbox" id="loadBox">
+      <div class="loadbox-top">
+        <div>
+          <b>🦙 Run the real TinyLlama — right here, right now</b>
+          <p>One-time download of the actual <code>TinyLlama-1.1B-Chat</code> (~630 MB),
+             then it runs <b>100% in this browser tab on your GPU via WebGPU</b>.
+             No server, no API key, nothing leaves the machine. Cached after first load.</p>
+        </div>
+        <button id="loadBtn">↓ Load TinyLlama</button>
+      </div>
+      <div class="barwrap" id="barWrap" hidden>
+        <div class="bar"><i id="barFill"></i></div>
+        <div class="barlabel" id="barLabel">starting…</div>
+      </div>
+    </div>
+
+    <div class="chat-log" id="log"></div>
+
+    <div class="quick">
+      <button class="qchip c1" data-q="I'm building a code assistant for my dev setup, running fully local.">💻 Code assistant</button>
+      <button class="qchip c2" data-q="Offline poetry generator for a gallery — privacy matters, no internet allowed.">✍️ Offline poetry</button>
+      <button class="qchip c3" data-q="An art installation where the model describes webcam photos of visitors, needs to respond fast.">📷 Vision installation</button>
+      <button class="qchip c4" data-q="What's the biggest model I can run?">🐘 Biggest I can run?</button>
+    </div>
+
+    <div class="chat-input">
+      <textarea id="in" rows="1" placeholder="e.g. a chatbot that gallery visitors can talk to…"></textarea>
+      <button id="send">Send</button>
+    </div>
+  </section>
+</div>
+
+<footer>
+  CART 498 · OLLAMA PRESENTATION · KERVEN, MAIA, &amp; SKYLA · NOV 5, 2026
+  <div class="credit">made by Skyla Trousdale &amp; Kimi-k3:cloud via Ollama · in-browser inference by WebLLM (MLC)</div>
+</footer>
+
+<script>
+/* ================================================================
+   STEP 1 — HARDWARE STATE & PRESETS
+   (sorted weakest → strongest; mac:true = Apple unified memory,
+    shared:'...' = other unified-memory device with custom note)
+================================================================ */
+const PRESETS=[
+ {id:'chrome', name:'Chromebook',       dot:'#94a3b8', vram:0,  ram:4,   spec:'No GPU · 4 GB RAM'},
+ {id:'budget', name:'Budget Laptop',    dot:'#3aa8ff', vram:0,  ram:8,   spec:'No GPU · 8 GB RAM'},
+ {id:'pi',     name:'Raspberry Pi 5',   dot:'#dc2626', vram:0,  ram:8,   spec:'ARM board · 8 GB shared'},
+ {id:'mid',    name:'Everyday Laptop',  dot:'#ff8a3d', vram:4,  ram:16,  spec:'4 GB VRAM · 16 GB RAM'},
+ {id:'air8',   name:'MacBook Air 8 GB', dot:'#f9a8d4', vram:5,  ram:8,   spec:'M-series · 8 GB unified', mac:true},
+ {id:'glap',   name:'Gaming Laptop',    dot:'#f59e0b', vram:6,  ram:16,  spec:'6 GB VRAM · 16 GB RAM'},
+ {id:'deck',   name:'Steam Deck',       dot:'#14b8a6', vram:8,  ram:16,  spec:'APU · 16 GB shared',
+   shared:'🕹 The Steam Deck shares its 16 GB between CPU and GPU — the VRAM figure is the estimated GPU-usable portion.'},
+ {id:'air',    name:'MacBook Air 16 GB',dot:'#f471b5', vram:10, ram:16,  spec:'M-series · 16 GB unified', mac:true},
+ {id:'pro',    name:'MacBook Pro',      dot:'#b79aff', vram:27, ram:36,  spec:'M-series Pro · 36 GB unified', mac:true},
+ {id:'gaming', name:'Gaming PC',        dot:'#6c5ce7', vram:12, ram:32,  spec:'12 GB VRAM · 32 GB RAM'},
+ {id:'4k',     name:'4K Gaming PC',     dot:'#059669', vram:16, ram:32,  spec:'16 GB VRAM · 32 GB RAM'},
+ {id:'rig',    name:'Creator Rig',      dot:'#16a34a', vram:24, ram:64,  spec:'24 GB VRAM · 64 GB RAM'},
+ {id:'studio', name:'Mac Studio',       dot:'#8b5cf6', vram:48, ram:64,  spec:'M-series Max/Ultra · 64 GB unified', mac:true},
+ {id:'ws',     name:'AI Workstation',   dot:'#475569', vram:48, ram:128, spec:'48 GB VRAM · 128 GB RAM'},
+ {id:'custom', name:'+ Build your own', dot:'#8a86a3', custom:true},
+];
+
+const state={vram:12, ram:32, preset:'gaming'};
+const OVERHEAD=2, PER_B=0.6;
+const capacity=()=> state.vram>0 ? state.vram + state.ram*0.4 : state.ram;
+
+const presetsEl=document.getElementById('presets'),
+      customPanel=document.getElementById('customPanel'),
+      statVram=document.getElementById('statVram'),
+      statRam=document.getElementById('statRam'),
+      vramHint=document.getElementById('vramHint'),
+      macNote=document.getElementById('macNote'),
+      fitPill=document.getElementById('fitPill'),
+      vCustom=document.getElementById('vCustom'),
+      rCustom=document.getElementById('rCustom');
+
+const APPLE_NOTE='🍎 Apple Silicon shares memory between CPU and GPU automatically — the VRAM figure is an estimate of the GPU-usable portion.';
+
+/* build preset buttons */
+PRESETS.forEach(p=>{
+  const b=document.createElement('button');
+  b.className='preset'+(p.custom?' custom':'')+(p.id===state.preset?' active':'');
+  b.dataset.id=p.id;
+  b.innerHTML= p.custom
+    ? `<span class="name">＋</span><span class="spec">enter your own specs</span>`
+    : `<span class="dot" style="background:${p.dot}"></span><span class="name">${p.name}</span><span class="spec">${p.spec}</span>`;
+  b.addEventListener('click',()=>selectPreset(p.id));
+  presetsEl.appendChild(b);
+});
+
+function selectPreset(id){
+  state.preset=id;
+  document.querySelectorAll('.preset').forEach(el=>el.classList.toggle('active',el.dataset.id===id));
+  const p=PRESETS.find(x=>x.id===id);
+  customPanel.classList.toggle('open',!!p.custom);
+  if(!p.custom){state.vram=p.vram;state.ram=p.ram;}
+  else{state.vram=+vCustom.textContent;state.ram=+rCustom.textContent;}
+  updateStats(p);
+}
+function setCustom(nv,nr){
+  state.vram=Math.min(48,Math.max(0,nv));
+  state.ram=Math.min(128,Math.max(4,nr));
+  vCustom.textContent=state.vram;rCustom.textContent=state.ram;
+  updateStats(PRESETS.find(p=>p.id==='custom'));
+}
+document.getElementById('vPlus').onclick =()=>setCustom(state.vram+2,state.ram);
+document.getElementById('vMinus').onclick=()=>setCustom(state.vram-2,state.ram);
+document.getElementById('rPlus').onclick =()=>setCustom(state.vram,state.ram+4);
+document.getElementById('rMinus').onclick=()=>setCustom(state.vram,state.ram-4);
+
+function updateStats(preset){
+  statVram.textContent=state.vram;
+  statRam.textContent=state.ram;
+  vramHint.textContent= state.vram===0 ? 'No dedicated GPU — CPU only' : 'Dedicated graphics card memory';
+
+  /* unified-memory note: Apple text for Macs, custom text for other shared-memory devices */
+  const note = preset ? (preset.shared || (preset.mac ? APPLE_NOTE : null)) : null;
+  macNote.classList.toggle('show',!!note);
+  if(note) macNote.textContent=note;
+
+  const cap=capacity(), maxB=Math.max(0,Math.floor((cap-OVERHEAD)/PER_B));
+  fitPill.textContent=`models up to ~${maxB}B params`;
+  fitPill.className='fit-pill '+(maxB>=8?'good':maxB>=4?'ok':'bad');
+
+  sysnote(`⚙ Hardware → ${state.vram?state.vram+' GB VRAM':'no GPU'} · ${state.ram} GB RAM`);
+}
+
+/* ================================================================
+   STEP 2 — MODEL MATCH CHATBOT
+   (rule-based by default; once the loader below finishes, real
+    TinyLlama-1.1B generates the prose and this engine verifies fit)
+================================================================ */
+const MODELS=[
+ {name:'tinyllama',       b:1.1, tags:['fast','chat'],              blurb:'Featherweight — runs on nearly anything.'},
+ {name:'qwen2.5:1.5b',    b:1.5, tags:['fast','chat','translate'],  blurb:'Qwen-mini class — great small starter, good multilingual.'},
+ {name:'phi3',            b:3.8, tags:['fast','chat','analysis'],   blurb:'Punchy small model — a top pick for 4–6 GB VRAM.'},
+ {name:'deepseek-coder',  b:6.7, tags:['code'],                     blurb:'Solid code generation for its size.'},
+ {name:'mistral',         b:7,   tags:['writing','chat','analysis','fast'], blurb:'Recommended for 4–6 GB VRAM. Strong general + creative writer.'},
+ {name:'llava',           b:7,   tags:['vision','fast'],            blurb:'Vision-language — describe images, webcam frames, screenshots.'},
+ {name:'qwen2.5-coder',   b:7,   tags:['code'],                     blurb:'Strong current code model — completion, debugging, explaining.'},
+ {name:'llama3.1',        b:8,   tags:['chat','writing','persona','analysis'], blurb:'The dependable all-rounder — conversation, persona, prose.'},
+ {name:'gemma2',          b:9,   tags:['chat','writing'],           blurb:'Clean, coherent responses from Google\'s open model.'},
+ {name:'llama3.2-vision', b:11,  tags:['vision'],                   blurb:'Sharper image understanding — captions + visual Q&A.'},
+ {name:'codellama:13b',   b:13,  tags:['code'],                     blurb:'Heavier code reasoning for gnarly problems.'},
+ {name:'mixtral',         b:47,  tags:['writing','analysis','heavy'], blurb:'Big mixture-of-experts — needs serious hardware.'},
+ {name:'llama3:70b',      b:70,  tags:['chat','writing','heavy'],   blurb:'Big-brain tier — realistically an Ollama Cloud candidate.'},
+];
+const LEX=[
+ {tag:'vision',   words:['image','picture','photo','camera','vision','see','visual','webcam','screenshot','frame','look']},
+ {tag:'code',     words:['code','coding','program','script','bug','debug','python','javascript','developer','software','function','compile','arduino','api']},
+ {tag:'writing',  words:['write','writing','poem','poetry','story','fiction','creative','essay','lyrics','prose','narrative']},
+ {tag:'chat',     words:['chat','chatbot','conversation','talk','visitor','audience','interact','assistant','persona','character','roleplay','gallery']},
+ {tag:'analysis', words:['summar','analy','notes','documents','research','extract','data','report']},
+ {tag:'translate',words:['translate','translation','language','bilingual','multilingual']},
+ {tag:'fast',     words:['fast','speed','real-time','realtime','immediate','live','responsive','instant']},
+];
+const needFor=b=>b*PER_B+OVERHEAD;
+
+const log=document.getElementById('log'), input=document.getElementById('in');
+
+function scrollLog(){log.scrollTop=log.scrollHeight;}
+function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function addUser(t){const d=document.createElement('div');d.className='msg user';d.innerHTML=`<div class="bubble">${esc(t)}</div>`;log.appendChild(d);scrollLog();}
+function addBot(h){const d=document.createElement('div');d.className='msg bot';d.innerHTML=`<div class="bubble">${h}</div>`;log.appendChild(d);scrollLog();}
+function sysnote(t){
+  const last=log.lastElementChild;
+  if(last&&last.classList.contains('sysnote')&&last.dataset.t===t)return; // no duplicates
+  const d=document.createElement('div');d.className='sysnote';d.dataset.t=t;d.textContent=t;
+  log.appendChild(d);scrollLog();
+}
+function typingOn(){const d=document.createElement('div');d.className='typing';d.id='typing';d.innerHTML='<i></i><i></i><i></i>';log.appendChild(d);scrollLog();}
+function typingOff(){const t=document.getElementById('typing');if(t)t.remove();}
+
+function fitBadge(need){
+  const {vram}=state, cap=capacity();
+  if(vram>0&&vram>=need)      return [`✓ Runs great — fully on your GPU`,'great'];
+  if(vram>0&&cap>=need)       return [`~ Runs okay — split GPU + CPU (slower)`,'ok'];
+  if(vram===0&&cap>=need)     return [`~ CPU only — works, but slow on big jobs`,'ok'];
+  return [`✗ Won't fit — needs ≈${need.toFixed(1)} GB`,'no'];
+}
+function card(m,reasons,alt){
+  const need=needFor(m.b),[fb,cls]=fitBadge(need);
+  return `<span class="model-name">→ <span>${m.name}</span></span>
+    <ul>${reasons.map(r=>`<li>${r}</li>`).join('')}</ul>
+    <div class="cmdline"><span>ollama run ${m.name}</span><button data-copy="ollama run ${m.name}">COPY</button></div>
+    ${alt?`<span class="alt-chip">also try: ${alt.name} (≈${needFor(alt.b).toFixed(1)} GB)</span>`:''}
+    <span class="fitbadge ${cls}">${fb}</span>`;
+}
+function reasonsFor(m,hits){
+  const r=[m.blurb];
+  if(hits.has('vision'))r.push('Accepts image input — ask questions about visual content.');
+  if(hits.has('code'))r.push('Trained heavily on code — completion, explanation, debugging.');
+  if(hits.has('fast'))r.push('Small footprint → quick responses for live interactive work.');
+  if(hits.has('writing'))r.push('Comfortable with creative prose — poems, stories, voices.');
+  if(hits.has('chat'))r.push('Handles free-form conversation well.');
+  if(hits.has('translate'))r.push('Strong multilingual performance.');
+  if(hits.has('analysis'))r.push('Good at summarising and structuring documents.');
+  r.push(`Needs ≈${needFor(m.b).toFixed(1)} GB of memory.`);
+  return r;
+}
+
+function recommend(raw){
+  const text=raw.toLowerCase();
+
+  /* typed-in specs → become the custom build */
+  const vM=text.match(/(\d{1,3})\s?gb[^a-z]{0,12}(vram|gpu)/);
+  const rM=text.match(/(\d{1,3})\s?gb[^a-z]{0,12}(ram|memory)/)||text.match(/(\d{1,3})\s?gb(?![^a-z]{0,12}(vram|gpu))/);
+  let specNote='';
+  if(vM||rM){
+    state.preset='custom';
+    document.querySelectorAll('.preset').forEach(el=>el.classList.toggle('active',el.dataset.id==='custom'));
+    customPanel.classList.add('open');
+    setCustom(vM?+vM[1]:state.vram, rM?+rM[1]:state.ram);
+    specNote=' Step 1 updated automatically. ✓';
+  }
+
+  const cap=capacity();
+
+  /* ceiling question */
+  if(/biggest|largest|max(imum)?\s+model|how big/.test(text)){
+    const fit=[...MODELS].filter(m=>needFor(m.b)<=cap).sort((a,b)=>b.b-a.b)[0];
+    if(!fit)return 'Even the smallest model I know needs ~2.7 GB — check your specs, or look at <b>Ollama Cloud</b>.'+specNote;
+    return card(fit,[`At ≈${needFor(fit.b).toFixed(1)} GB, it's the largest that fits your setup.`,fit.blurb],
+      [...MODELS].reverse().find(m=>m!==fit&&needFor(m.b)<=cap))+specNote;
+  }
+
+  /* intent scoring */
+  const hits=new Set();
+  LEX.forEach(c=>{if(c.words.some(w=>text.includes(w)))hits.add(c.tag);});
+  if(!hits.size)hits.add('chat');
+  const scored=MODELS.map(m=>{
+    let s=0;const need=needFor(m.b);
+    hits.forEach(h=>{if(m.tags.includes(h))s+=3;});
+    if(hits.has('fast')&&m.b<=4)s+=1;
+    if(state.vram>0&&need<=state.vram)s+=2;
+    else if(need>cap)s-=6;
+    return{m,s,need};
+  }).sort((a,b)=>b.s-a.s);
+
+  const best=scored[0];
+  if(best.need>cap){
+    return `<span class="model-name">→ <span>Hardware says no… cloud says yes</span></span>
+      <ul><li>Everything matching your project needs more than your ~${cap.toFixed(1)} GB effective capacity.</li>
+      <li>Ollama Cloud runs the big models on NVIDIA GPUs — your laptop just sends prompts.</li>
+      <li>Free tier = one cloud model at a time.</li></ul>
+      <div class="cmdline"><span>ollama run llama3:70b</span><button data-copy="ollama run llama3:70b">COPY</button></div>
+      <span class="fitbadge no">✗ Too big for local — use Ollama Cloud</span>`+specNote;
+  }
+  const alt=scored.find(x=>x.m!==best.m&&x.need<=cap);
+  return card(best.m,reasonsFor(best.m,hits),alt&&alt.m)+specNote;
+}
+
+function respond(raw){
+  const t=raw.trim();if(!t)return;
+  addUser(t);
+
+  if(/^(hi|hello|hey|yo)\b/i.test(t)&&t.length<20){
+    addBot(`Hi! 👋 I'm <b>TinyLlama</b> (<b>tinyllama:1.1b</b>). Tell me what you're making — a chatbot, a code helper, a vision demo, an offline installation…<br>
+            I'll match it to a model that fits your <b>${state.vram||'no'} GB VRAM / ${state.ram} GB RAM</b> setup.`+
+            ((window.tinyLlama&&window.tinyLlama.ready)
+              ?'<br>✅ <b>I am running live on your GPU right now.</b>'
+              :'<br>Tip: press <b>↓ Load TinyLlama</b> above to run the real me, in this tab.'));
+    return;
+  }
+  if(/help|what can you do|how do you work/i.test(t)&&t.length<40){
+    addBot(`<b>How I work</b><ul><li>Describe your project in a sentence — I detect intent: code · vision · writing · chat · analysis · speed.</li>
+            <li>I read your computer from Step 1 and only recommend what fits.</li>
+            <li>Type your specs ("I have 8gb vram and 16gb ram") and I'll update Step 1 for you.</li></ul>`);
+    return;
+  }
+
+  /* spec-typing & "biggest model?" stay deterministic — that's math, not vibes */
+  const deterministic=/\d{1,3}\s?gb/i.test(t)||/biggest|largest|max(imum)?\s+model|how big/i.test(t);
+
+  if(window.tinyLlama&&window.tinyLlama.ready&&!deterministic){
+    typingOn();
+    window.tinyLlama.reply(t);   /* async: streams REAL tokens, then adds the spec-checked card */
+    return;
+  }
+  typingOn();
+  setTimeout(()=>{typingOff();addBot(recommend(t));},600);
+}
+
+document.getElementById('send').onclick=()=>{respond(input.value);input.value='';};
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();respond(input.value);input.value='';input.style.height='auto';}
+});
+input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,110)+'px';});
+document.querySelectorAll('.qchip').forEach(b=>b.addEventListener('click',()=>respond(b.dataset.q)));
+document.addEventListener('click',async e=>{
+  const btn=e.target.closest('[data-copy]');if(!btn)return;
+  try{await navigator.clipboard.writeText(btn.dataset.copy);}
+  catch{const t=document.createElement('textarea');t.value=btn.dataset.copy;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}
+  btn.textContent='COPIED ✓';setTimeout(()=>btn.textContent='COPY',1300);
+});
+
+/* fullscreen for presenting */
+document.getElementById('fsBtn').onclick=()=>{
+  if(document.fullscreenElement)document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+};
+
+/* greeting — the chatbot introduces itself as TinyLlama */
+addBot(`Hi! 👋 I'm <b>TinyLlama</b> 🦙 — the <b>tinyllama:1.1b</b> chatbot, small enough to run on almost anything.<br>
+        Set your computer in Step 1 above, then describe your project —
+        I'll recommend an open-source model and give you the exact <b>ollama run</b> command.<br><br>
+        Want the real thing? Press <b>↓ Load TinyLlama</b> — the actual model will download once,
+        then run entirely on <i>this</i> machine's GPU, inside this tab.`);
+updateStats(PRESETS.find(p=>p.id===state.preset));
+</script>
+
+<script type="module">
+/* ================================================================
+   REAL TINYLLAMA VIA WebLLM — downloads once, runs on this GPU.
+   Reads the globals declared in the classic script above
+   (state, MODELS, LEX, capacity, needFor, fitBadge, recommend,
+    addBot, sysnote, typingOff, log, scrollLog …)
+================================================================ */
+const TINY_ID     = "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC";    // 2k ctx · ~697 MB VRAM · needs shader-f16
+const TINY_ID_F32 = "TinyLlama-1.1B-Chat-v1.0-q4f32_1-MLC";    // fallback if the GPU lacks f16 shaders
+
+let engine=null, webllm=null, loading=false, busy=false;
+window.tinyLlama={ready:false, reply:null};
+
+const loadBtn=document.getElementById('loadBtn'),
+      barWrap=document.getElementById('barWrap'),
+      barFill=document.getElementById('barFill'),
+      barLabel=document.getElementById('barLabel'),
+      loadBox=document.getElementById('loadBox');
+
+if(!navigator.gpu){
+  loadBtn.disabled=true; loadBtn.textContent='WebGPU not available here';
+  barWrap.hidden=false;
+  barLabel.textContent='No WebGPU in this browser (use Chrome/Edge 113+ or Safari 26+). The rule-based brain below still works.';
+}
+
+loadBtn.onclick=async()=>{
+  if(loading||window.tinyLlama.ready)return;
+  loading=true; loadBtn.disabled=true; barWrap.hidden=false; barLabel.textContent='downloading runtime…';
+  const onProg=r=>{
+    barFill.style.width=Math.round(r.progress*100)+'%';
+    barLabel.textContent=`${Math.round(r.progress*100)}% — ${r.text}`;
+  };
+  try{
+    webllm = webllm || await import("https://esm.run/@mlc-ai/web-llm");
+    try{
+      engine=await webllm.CreateMLCEngine(TINY_ID,{logLevel:"WARN",initProgressCallback:onProg});
+    }catch(f16err){
+      console.warn('f16 build failed, trying f32:',f16err);
+      barLabel.textContent='f16 shaders unavailable — trying the f32 build…';
+      engine=await webllm.CreateMLCEngine(TINY_ID_F32,{logLevel:"WARN",initProgressCallback:onProg});
+    }
+    window.tinyLlama.ready=true;
+    window.tinyLlama.reply=llmReply;
+    loadBox.classList.add('done');
+    loadBtn.textContent='✓ TinyLlama running locally';
+    barFill.style.width='100%';
+    barLabel.textContent='100% — weights are cached in this browser. Next visit: loads in seconds, fully offline.';
+    sysnote("🦙 real TinyLlama-1.1B loaded · running on this machine's GPU · zero server calls");
+    addBot(`<b>I'm actually alive now!</b> 🦙 This message — and everything below — is generated token-by-token by a real
+            <b>TinyLlama-1.1B</b> on <i>your</i> GPU, inside this tab. No server, no API key.
+            I'll suggest a model, and a little rule-checker verifies the memory math under my answer.`);
+  }catch(err){
+    console.error(err);
+    loading=false; loadBtn.disabled=false; loadBtn.textContent='↻ Try loading again';
+    barLabel.textContent='⚠ Load failed: '+(err&&err.message?err.message:err)+' — the rule-based brain keeps working meanwhile.';
+  }
+};
+
+/* fresh, short prompt each turn (2k context) — specs always current from Step 1 */
+function tinyMessages(userText){
+  const cap=capacity(), fits=MODELS.filter(m=>needFor(m.b)<=cap);
+  const list=fits.map(m=>`${m.name} (${m.tags.join('/')})`).join(', ');
+  return [
+    {role:'system',content:
+      `You are TinyLlama, a friendly assistant inside an Ollama demo page. The user has ${state.vram||'no'} GB GPU VRAM and ${state.ram} GB RAM (about ${cap.toFixed(0)} GB usable for models). `+
+      (fits.length?`Recommend exactly ONE model from this list, which all fit: ${list}. `
+                  :`No local model fits; tell them to use Ollama Cloud for a big model. `)+
+      `Reply in at most 2 short plain-text sentences, no markdown, no lists, and include the command "ollama run MODELNAME".`},
+    {role:'user',content:userText}
+  ];
+}
+
+async function llmReply(userText){
+  if(busy){typingOff();sysnote('⏳ still generating — one moment');return;}
+  busy=true; typingOff();
+  const d=document.createElement('div');d.className='msg bot';
+  d.innerHTML=`<div class="bubble"><span class="livelabel"><i></i>LIVE · TINYLLAMA · YOUR GPU</span><span class="stream"></span></div>`;
+  log.appendChild(d);scrollLog();
+  const span=d.querySelector('.stream');
+  try{
+    try{await engine.resetChat();}catch(_){}
+    const chunks=await engine.chat.completions.create({
+      messages:tinyMessages(userText),
+      temperature:0.7, top_p:0.9, max_tokens:220, stream:true
+    });
+    let txt='';
+    for await(const chunk of chunks){
+      txt+=chunk.choices?.[0]?.delta?.content||'';
+      span.textContent=txt;            /* textContent ⇒ model output can never inject HTML */
+      scrollLog();
+    }
+    if(!txt.trim())throw new Error('empty reply');
+  }catch(err){
+    console.warn('TinyLlama inference failed, falling back to rules:',err);
+    d.remove(); addBot(recommend(userText)); busy=false; return;
+  }
+  busy=false;
+  addBot(verifyCard(userText));        /* deterministic memory check under the prose */
+}
+
+/* same scoring as recommend(), minus the rendering — best model that FITS */
+function bestPickFor(text){
+  const t=text.toLowerCase(),hits=new Set();
+  LEX.forEach(c=>{if(c.words.some(w=>t.includes(w)))hits.add(c.tag);});
+  if(!hits.size)hits.add('chat');
+  const best=MODELS.filter(m=>needFor(m.b)<=capacity()).map(m=>{let s=0;
+    hits.forEach(h=>{if(m.tags.includes(h))s+=3;});
+    if(hits.has('fast')&&m.b<=4)s+=1;
+    if(state.vram>0&&needFor(m.b)<=state.vram)s+=2;
+    return{m,s};}).sort((a,b)=>b.s-a.s)[0];
+  return best?best.m:null;
+}
+
+function verifyCard(userText){
+  const best=bestPickFor(userText);
+  if(!best)return `<div class="verify">✗ spec-check</div><span class="fitbadge no">Nothing local fits the Step-1 machine — use Ollama Cloud instead (e.g. <b>ollama run llama3:70b</b> as a cloud model).</span>`;
+  const need=needFor(best.b),[fb,cls]=fitBadge(need);
+  return `<div class="verify">✓ spec-checked against your Step-1 machine</div>
+    <span class="model-name">→ <span>${best.name}</span></span>
+    <div class="cmdline"><span>ollama run ${best.name}</span><button data-copy="ollama run ${best.name}">COPY</button></div>
+    <span class="fitbadge ${cls}">${fb}</span>`;
+}
+</script>
+</body>
+</html>
